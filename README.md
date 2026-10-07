@@ -109,9 +109,14 @@ a clean slate is also fine.)
 ## Switching to Azure SQL (Phase 5)
 1. Create the free Azure SQL database (set free-limit behavior to **Auto-pause**).
 2. Add its outbound-friendly firewall rule for your backend host.
-3. Set `DATABASE_URL` (see `backend/.env.example`) — no code changes needed. Alembic
-   and the app both read it, and migrations run against Azure SQL the same way.
-   The included `backend/Dockerfile` installs ODBC Driver 18 for you.
+3. Install the SQL Server driver and ODBC Driver 18 on the backend host:
+   ```bash
+   pip install -r requirements.txt -r requirements-sqlserver.txt
+   ```
+4. Set `DATABASE_URL` to the `mssql+pyodbc://…` string (see `backend/.env.example`) —
+   no code changes needed. Alembic and the app both read it, and migrations run
+   against SQL Server the same way they do locally. SQLite remains the zero-setup
+   fallback for local dev whenever `DATABASE_URL` is unset.
 
 ## API
 All routes below except `/api/health`, `/api/auth/register` and `/api/auth/login`

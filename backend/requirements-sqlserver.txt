@@ -1,0 +1,7 @@
+# SQL Server (Azure SQL) driver — the production database for Helmsman.
+# Install on top of the base requirements when DATABASE_URL points at SQL Server:
+#     pip install -r requirements.txt -r requirements-sqlserver.txt
+# Requires Microsoft ODBC Driver 18 for SQL Server on the host:
+#   macOS:  brew install msodbcsql18    (via the microsoft/mssql-release tap)
+#   Debian: see https://learn.microsoft.com/sql/connect/odbc/linux-mac/
+pyodbc>=5.1

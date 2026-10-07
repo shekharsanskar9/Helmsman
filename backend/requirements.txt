@@ -6,4 +6,5 @@ pydantic>=2
 python-dotenv
 pyjwt
 bcrypt
-# pyodbc            # uncomment for Azure SQL (needs ODBC Driver 18 + system deps). Installed in the Dockerfile for deployment.
+# For SQL Server (Azure SQL), the production database, also install the driver:
+#     pip install -r requirements-sqlserver.txt   (needs ODBC Driver 18)
