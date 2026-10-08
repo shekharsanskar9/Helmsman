@@ -1,156 +1,498 @@
 # ⚓ Helmsman — Fleet Management Dashboard
 
-A full-stack CRUD dashboard for a maritime operator to manage its fleet: track
-vessels, their **voyages**, and the **cargo** each voyage carries — with search,
-filtering, pagination, and (later) role-based access. Built with **React**, a
-**FastAPI** REST backend, and a **SQL Server (Azure SQL)** relational database via
-**SQLAlchemy**, with schema changes managed by **Alembic** migrations.
+A full-stack CRUD dashboard for a maritime operator to manage its fleet: track **vessels, voyages, and cargo** carried by each voyage.
 
-> Status: **Phase 4 — UX.** A Dashboard tab with fleet-wide stats and charts, inline
-> form validation on every "Add ___" form, and responsive polish down to phone
-> width — on top of Phase 3's JWT auth.
+Built with **React**, **FastAPI**, **SQLAlchemy**, **SQLite**, and **Alembic**, with JWT-based authentication and role-based access control.
+
+> **Status: Phase 4 — UX**
+>
+> Includes fleet-wide dashboard statistics and charts, inline form validation, responsive UI, search, filtering, pagination, and JWT authentication with admin/viewer roles.
+
+---
 
 ## Architecture
 
-```
-React (Vite)  ──HTTP/JSON──►  FastAPI  ──SQLAlchemy──►  Database
-  frontend/                    backend/    + Alembic      SQLite (local) / Azure SQL (prod)
-  tabbed UI:                   routers per entity
-  Vessels · Voyages · Cargo    vessels / voyages / cargo
-```
+```text
+React (Vite) ──HTTP/JSON──► FastAPI ──SQLAlchemy──► SQLite
+   frontend/                  backend/              database
 
-## Data model
-
-A normalized three-table hierarchy. Deleting a parent cascades to its children
-(enforced by `ON DELETE CASCADE` plus SQLAlchemy relationship cascades; foreign
-keys are also enforced on SQLite via a `PRAGMA foreign_keys=ON` connection hook).
-
-```
-vessels
-  id (PK)
-  name, imo_number (unique), vessel_type, status, capacity_tonnes, year_built
-    │
-    │ 1───many   (voyages.vessel_id → vessels.id, ON DELETE CASCADE)
-    ▼
-voyages
-  id (PK)
-  vessel_id (FK), voyage_number, origin_port, destination_port,
-  departure_date, arrival_date, status
-    │
-    │ 1───many   (cargo.voyage_id → voyages.id, ON DELETE CASCADE)
-    ▼
-cargo
-  id (PK)
-  voyage_id (FK), description, cargo_type, weight_tonnes, quantity, hazardous
+   Tabbed UI                  REST API              Relational data
+   Vessels                    /vessels              Vessels
+   Voyages                    /voyages              Voyages
+   Cargo                      /cargo                Cargo
+   Dashboard                  /stats                Users
 ```
 
-## Quickstart (local — zero DB setup, uses SQLite)
+---
 
-### 1. Backend
+## Tech Stack
+
+### Frontend
+
+* React
+* Vite
+* JavaScript
+* Responsive UI
+
+### Backend
+
+* FastAPI
+* Python
+* SQLAlchemy
+* Pydantic
+* JWT Authentication
+
+### Database
+
+* SQLite
+* Alembic migrations
+
+### Development
+
+* Git / GitHub
+* REST API
+* Swagger / OpenAPI
+
+---
+
+## Data Model
+
+The application uses a normalized three-table hierarchy:
+
+```text
+Vessels
+   │
+   │ 1 ─── many
+   ▼
+Voyages
+   │
+   │ 1 ─── many
+   ▼
+Cargo
+```
+
+### Vessels
+
+```text
+id
+name
+imo_number
+vessel_type
+status
+capacity_tonnes
+year_built
+```
+
+### Voyages
+
+```text
+id
+vessel_id
+voyage_number
+origin_port
+destination_port
+departure_date
+arrival_date
+status
+```
+
+### Cargo
+
+```text
+id
+voyage_id
+description
+cargo_type
+weight_tonnes
+quantity
+hazardous
+```
+
+Foreign-key relationships are enforced between the tables, with cascade deletion from vessels → voyages → cargo.
+
+SQLite foreign-key enforcement is enabled through a database connection hook.
+
+---
+
+## Features
+
+### Fleet Management
+
+* Create, read, update, and delete vessels
+* Manage voyages associated with vessels
+* Manage cargo associated with voyages
+* Foreign-key validation
+* Cascade deletion
+
+### Search & Filtering
+
+* Search vessels
+* Filter vessels by status
+* Search voyages
+* Filter voyages by status
+* Filter voyages by vessel
+* Search cargo
+* Filter cargo by type
+* Filter cargo by voyage
+
+### Pagination
+
+List endpoints support:
+
+* `skip`
+* `limit`
+
+This prevents the frontend from loading the entire dataset at once.
+
+### Dashboard
+
+The dashboard provides fleet-wide statistics and charts through:
+
+```text
+GET /api/stats
+```
+
+### Authentication
+
+The application uses JWT-based authentication.
+
+Two roles are supported:
+
+* **Admin** — can create, edit, and delete records
+* **Viewer** — can browse and search records
+
+JWTs are sent through the HTTP authorization header:
+
+```text
+Authorization: Bearer <token>
+```
+
+### Form Validation
+
+The frontend performs inline validation on the Add/Edit forms to provide immediate feedback before submitting data to the backend.
+
+### Responsive UI
+
+The interface is designed to work across desktop, tablet, and mobile screen sizes.
+
+---
+
+## Quickstart
+
+The application can be run locally using SQLite without any database server setup.
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repository-url>
+cd Helmsman
+```
+
+### 2. Backend
+
 ```bash
 cd backend
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload    # http://localhost:8000
-```
-On startup the app **applies Alembic migrations automatically** and then seeds a
-small sample fleet (3 vessels, 2 voyages, 3 cargo items) plus one default admin
-account on first run. Open the interactive API docs (Swagger) at
-http://localhost:8000/docs.
 
-### 2. Frontend (new terminal)
+python -m venv .venv
+```
+
+Activate the virtual environment.
+
+**macOS / Linux:**
+
+```bash
+source .venv/bin/activate
+```
+
+**Windows:**
+
+```bash
+.venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Start the backend:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Backend:
+
+```text
+http://localhost:8000
+```
+
+Swagger API documentation:
+
+```text
+http://localhost:8000/docs
+```
+
+---
+
+## 3. Frontend
+
+Open another terminal:
+
 ```bash
 cd frontend
+
 npm install
-cp .env.example .env             # VITE_API_URL=http://localhost:8000
-npm run dev                      # http://localhost:5173
 ```
 
-## Auth
-
-Every API route requires a JWT (`Authorization: Bearer <token>`), obtained via
-`POST /api/auth/login`. Two ways to get one:
-
-- **Self-register** — `POST /api/auth/register` (or the "Create an account" link in
-  the UI). Self-registered accounts are always created with the `viewer` role, which
-  can browse and search but not create/edit/delete.
-- **Seeded admin** — on first startup the backend creates one admin account and
-  prints its credentials to the console:
-  `admin@helmsman.local` / `ChangeMe123!`. Change this password (or promote a user
-  to `admin` directly in the database) before deploying anywhere real.
-
-The frontend stores the JWT in `localStorage` and attaches it to every request;
-an expired/invalid token bounces the app back to the login screen.
-
-## Database migrations (Alembic)
-
-Migrations are the source of truth for the schema (Phase 1's `create_all` has been
-retired). They run automatically on app startup, but you can also drive them manually
-from the `backend/` directory:
+Create the environment file:
 
 ```bash
-alembic upgrade head                          # apply all migrations
-alembic downgrade -1                           # roll back the last migration
-alembic history --verbose                      # show the revision chain
-alembic revision --autogenerate -m "message"   # scaffold a new migration from model changes
+cp .env.example .env
 ```
 
-The revision chain: `0001_initial` (vessels) → `0002_voyages_cargo` (voyages + cargo)
-→ `0003_users` (auth).
+Set:
 
-**Upgrading from the Phase 1 POC?** If you already ran Phase 1 you may have a local
-`helmsman.db` whose `vessels` table was created before Alembic existed. Startup handles
-this automatically: it stamps that database at the `0001_initial` baseline and then
-applies `0002_voyages_cargo`, adding the new tables **without touching your existing
-vessel rows**. (`helmsman.db` is gitignored and only holds seed data, so deleting it for
-a clean slate is also fine.)
+```env
+VITE_API_URL=http://localhost:8000
+```
 
-## Switching to Azure SQL (Phase 5)
-1. Create the free Azure SQL database (set free-limit behavior to **Auto-pause**).
-2. Add its outbound-friendly firewall rule for your backend host.
-3. Install the SQL Server driver and ODBC Driver 18 on the backend host:
-   ```bash
-   pip install -r requirements.txt -r requirements-sqlserver.txt
-   ```
-4. Set `DATABASE_URL` to the `mssql+pyodbc://…` string (see `backend/.env.example`) —
-   no code changes needed. Alembic and the app both read it, and migrations run
-   against SQL Server the same way they do locally. SQLite remains the zero-setup
-   fallback for local dev whenever `DATABASE_URL` is unset.
+Start the frontend:
 
-## API
-All routes below except `/api/health`, `/api/auth/register` and `/api/auth/login`
-require `Authorization: Bearer <token>`.
+```bash
+npm run dev
+```
 
-| Method | Path                | Description                                                   |
-|--------|---------------------|--------------------------------------------------------------|
-| GET    | /api/health         | Health check                                                 |
-| POST   | /api/auth/register  | Create an account (always role `viewer`)                     |
-| POST   | /api/auth/login     | Log in, returns a JWT + the current user                     |
-| GET    | /api/auth/me        | Get the current authenticated user                            |
-| GET    | /api/stats          | Fleet-wide aggregate counts (Dashboard tab)                   |
-| GET    | /api/vessels        | List vessels (`search`, `status`, `skip`, `limit`)           |
-| GET    | /api/vessels/{id}   | Get one vessel                                                |
-| POST   | /api/vessels        | Create vessel                                                |
-| PUT    | /api/vessels/{id}   | Update vessel                                                 |
-| DELETE | /api/vessels/{id}   | Delete vessel (cascades to its voyages + cargo)              |
-| GET    | /api/voyages        | List voyages (`search`, `status`, `vessel_id`, `skip`, `limit`) |
-| GET    | /api/voyages/{id}   | Get one voyage                                                |
-| POST   | /api/voyages        | Create voyage (validates `vessel_id`)                        |
-| PUT    | /api/voyages/{id}   | Update voyage                                                 |
-| DELETE | /api/voyages/{id}   | Delete voyage (cascades to its cargo)                        |
-| GET    | /api/cargo          | List cargo (`search`, `cargo_type`, `voyage_id`, `skip`, `limit`) |
-| GET    | /api/cargo/{id}     | Get one cargo item                                           |
-| POST   | /api/cargo          | Create cargo (validates `voyage_id`)                        |
-| PUT    | /api/cargo/{id}     | Update cargo                                                  |
-| DELETE | /api/cargo/{id}     | Delete cargo                                                  |
+Frontend:
 
-Voyage responses embed a compact `vessel` summary and a `cargo_count`; cargo responses
-embed a compact `voyage` summary.
+```text
+http://localhost:5173
+```
 
-## Roadmap
-- [x] **Phase 1 — POC:** Vessel CRUD end-to-end
-- [x] **Phase 2 — Data model:** Voyages + Cargo with FK relationships & cascade deletes; Alembic migrations; UI search / filter / pagination
-- [x] **Phase 3 — Auth:** JWT login + role-based access (admin / viewer)
-- [x] **Phase 4 — UX:** dashboard stats/charts, form validation, responsive polish
-- [ ] **Phase 5 — Cloud + CI/CD:** Azure SQL, deploy backend + frontend, CI/CD pipeline (Azure DevOps or GitHub Actions)
+---
+
+## Database Migrations
+
+Database schema changes are managed using **Alembic**.
+
+Run migrations from the `backend/` directory:
+
+```bash
+alembic upgrade head
+```
+
+Rollback the latest migration:
+
+```bash
+alembic downgrade -1
+```
+
+View migration history:
+
+```bash
+alembic history --verbose
+```
+
+Create a new migration:
+
+```bash
+alembic revision --autogenerate -m "description"
+```
+
+Current migration structure:
+
+```text
+0001_initial
+      │
+      ▼
+0002_voyages_cargo
+      │
+      ▼
+0003_users
+```
+
+Migrations are applied automatically when the application starts.
+
+---
+
+## Authentication
+
+### Register
+
+```http
+POST /api/auth/register
+```
+
+Self-registered accounts are assigned the `viewer` role by default.
+
+### Login
+
+```http
+POST /api/auth/login
+```
+
+The login endpoint returns a JWT and the authenticated user's information.
+
+### Current User
+
+```http
+GET /api/auth/me
+```
+
+Requires a valid JWT.
+
+---
+
+## API Endpoints
+
+### Health
+
+| Method | Endpoint      | Description  |
+| ------ | ------------- | ------------ |
+| GET    | `/api/health` | Health check |
+
+### Authentication
+
+| Method | Endpoint             | Description           |
+| ------ | -------------------- | --------------------- |
+| POST   | `/api/auth/register` | Register a new viewer |
+| POST   | `/api/auth/login`    | Login and obtain JWT  |
+| GET    | `/api/auth/me`       | Get current user      |
+
+### Dashboard
+
+| Method | Endpoint     | Description           |
+| ------ | ------------ | --------------------- |
+| GET    | `/api/stats` | Fleet-wide statistics |
+
+### Vessels
+
+| Method | Endpoint            | Description   |
+| ------ | ------------------- | ------------- |
+| GET    | `/api/vessels`      | List vessels  |
+| GET    | `/api/vessels/{id}` | Get vessel    |
+| POST   | `/api/vessels`      | Create vessel |
+| PUT    | `/api/vessels/{id}` | Update vessel |
+| DELETE | `/api/vessels/{id}` | Delete vessel |
+
+Supported query parameters:
+
+```text
+search
+status
+skip
+limit
+```
+
+### Voyages
+
+| Method | Endpoint            | Description   |
+| ------ | ------------------- | ------------- |
+| GET    | `/api/voyages`      | List voyages  |
+| GET    | `/api/voyages/{id}` | Get voyage    |
+| POST   | `/api/voyages`      | Create voyage |
+| PUT    | `/api/voyages/{id}` | Update voyage |
+| DELETE | `/api/voyages/{id}` | Delete voyage |
+
+Supported query parameters:
+
+```text
+search
+status
+vessel_id
+skip
+limit
+```
+
+### Cargo
+
+| Method | Endpoint          | Description    |
+| ------ | ----------------- | -------------- |
+| GET    | `/api/cargo`      | List cargo     |
+| GET    | `/api/cargo/{id}` | Get cargo item |
+| POST   | `/api/cargo`      | Create cargo   |
+| PUT    | `/api/cargo/{id}` | Update cargo   |
+| DELETE | `/api/cargo/{id}` | Delete cargo   |
+
+Supported query parameters:
+
+```text
+search
+cargo_type
+voyage_id
+skip
+limit
+```
+
+---
+
+## API Response Relationships
+
+Voyage responses include a compact vessel summary and cargo count.
+
+Example:
+
+```json
+{
+  "id": 1,
+  "voyage_number": "VOY-001",
+  "vessel": {
+    "id": 1,
+    "name": "Ocean Explorer"
+  },
+  "cargo_count": 3
+}
+```
+
+Cargo responses include a compact voyage summary.
+
+This allows the frontend to display useful relationship information without making additional requests for every row.
+
+---
+
+## Project Structure
+
+```text
+Helmsman/
+│
+├── backend/
+│   ├── app/
+│   │   ├── routers/
+│   │   │   ├── auth.py
+│   │   │   ├── vessels.py
+│   │   │   ├── voyages.py
+│   │   │   └── cargo.py
+│   │   │
+│   │   ├── models/
+│   │   ├── schemas/
+│   │   ├── database/
+│   │   └── main.py
+│   │
+│   ├── alembic/
+│   ├── requirements.txt
+│   └── .env.example
+│
+├── frontend/
+│   ├── src/
+│   ├── public/
+│   ├── package.json
+│   └── .env.example
+│
+└── README.md
+```
+
+---
+
+## Development Phases
+
+* [x] **Phase 1 — POC:** Vessel CRUD end-to-end
+* [x] **Phase 2 — Data Model:** Voyages + Cargo, relationships, cascade deletes, Alembic migrations, search, filtering, and pagination
+* [x] **Phase 3 — Authentication:** JWT login and role-based access control
+* [x] **Phase 4 — UX:** Dashboard statistics/charts, form validation, and responsive UI
+
+---
+
+## License
+
+This project is developed as a portfolio/full-stack engineering project.
